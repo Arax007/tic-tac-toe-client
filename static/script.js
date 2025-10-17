@@ -2,7 +2,8 @@ const status = document.getElementById("status");
 const cells = document.querySelectorAll(".cell");
 const resetBtn = document.getElementById("reset");
 
-let ws = new WebSocket(`ws://${location.host}/ws`);
+let ws = new WebSocket(`wss://tic-tac-toe-server-ifgo.onrender.com/ws`);
+
 let mySymbol = "";
 let myTurn = false;
 
