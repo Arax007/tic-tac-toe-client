@@ -1,0 +1,46 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 20px;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+#status {
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+#board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 5px;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.cell {
+    background-color: white;
+    border: 2px solid #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.cell:hover {
+    background-color: #e0e0e0;
+}
+
+button#reset {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+}
