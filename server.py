@@ -1,20 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-from fastapi.middleware.cors import CORSMiddleware
+import os
 import json
 
 app = FastAPI()
-
-# Enable CORS so GitHub Pages client can connect
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # or ["https://arax007.github.io"]
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Serve HTML
@@ -23,6 +13,11 @@ async def get():
     with open("index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
+
+# Health check for uptime monitors
+@app.head("/")
+async def health_check():
+    return {"status": "ok"}
 
 # Game state
 players = []
@@ -76,12 +71,11 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("action") == "move":
                 index = int(msg.get("index", -1))
                 if index < 0 or index > 8:
-                    continue
-                # Only allow move if player's turn
+                    continue  # invalid index
                 if (turn_index == 0 and symbol == "X") or (turn_index == 1 and symbol == "O"):
                     if board[index] == "":
                         board[index] = symbol
-                        turn_index = 1 - turn_index  # switch turn
+                        turn_index = 1 - turn_index
 
                         winner = check_winner()
                         if winner:
@@ -101,11 +95,16 @@ async def websocket_endpoint(websocket: WebSocket):
                 await broadcast({"type":"update_board","board":board,"turn": True})
 
     except WebSocketDisconnect:
-        if websocket in players:
-            players.remove(websocket)
+        players.remove(websocket)
         print("Client disconnected")
     finally:
         try:
             await websocket.close()
         except:
             pass
+
+# Run Uvicorn with Render's port
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
