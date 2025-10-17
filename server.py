@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
 import json
@@ -12,6 +12,11 @@ async def get():
     with open("index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
+
+# Render health check
+@app.head("/")
+async def health_check(request: Request):
+    return {"status": "ok"}
 
 # Game state
 players = []
@@ -32,7 +37,7 @@ def check_winner():
         [0,4,8],[2,4,6]
     ]
     for a,b,c in wins:
-        if board[a]==board[b]==board[c]!="" :
+        if board[a] == board[b] == board[c] != "":
             return board[a]
     return None
 
@@ -62,8 +67,10 @@ async def websocket_endpoint(websocket: WebSocket):
             data = await websocket.receive_text()
             msg = json.loads(data)
 
-            if msg["action"] == "move":
-                index = int(msg["index"])
+            if msg.get("action") == "move":
+                index = int(msg.get("index", -1))
+                if index < 0 or index > 8:
+                    continue  # invalid index
                 # Only allow move if player's turn
                 if (turn_index == 0 and symbol == "X") or (turn_index == 1 and symbol == "O"):
                     if board[index] == "":
@@ -82,7 +89,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         else:
                             await broadcast({"type":"update_board","board":board,"turn": turn_index==0})
 
-            elif msg["action"] == "reset":
+            elif msg.get("action") == "reset":
                 board[:] = [""]*9
                 turn_index = 0
                 await broadcast({"type":"update_board","board":board,"turn": True})
