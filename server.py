@@ -1,9 +1,20 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 import json
 
 app = FastAPI()
+
+# Enable CORS so GitHub Pages client can connect
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["https://arax007.github.io"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Serve HTML
@@ -12,11 +23,6 @@ async def get():
     with open("index.html", "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
-
-# Render health check
-@app.head("/")
-async def health_check(request: Request):
-    return {"status": "ok"}
 
 # Game state
 players = []
@@ -70,7 +76,7 @@ async def websocket_endpoint(websocket: WebSocket):
             if msg.get("action") == "move":
                 index = int(msg.get("index", -1))
                 if index < 0 or index > 8:
-                    continue  # invalid index
+                    continue
                 # Only allow move if player's turn
                 if (turn_index == 0 and symbol == "X") or (turn_index == 1 and symbol == "O"):
                     if board[index] == "":
@@ -95,7 +101,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 await broadcast({"type":"update_board","board":board,"turn": True})
 
     except WebSocketDisconnect:
-        players.remove(websocket)
+        if websocket in players:
+            players.remove(websocket)
         print("Client disconnected")
     finally:
         try:
